@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:todo_list/controller/task_controller.dart';
-import 'package:todo_list/model/task_model.dart';
+import 'package:todo_list/model/task/task_model.dart';
 import 'package:todo_list/view/authentication/sign_in_page.dart';
 import 'package:todo_list/view/task/task_page.dart';
 
@@ -44,7 +44,7 @@ class _TaskListPageState extends State<TaskListPage> {
               Navigator.of(context)
                   .pushNamedAndRemoveUntil(SignInPage.route, (route) => false);
             },
-            icon: const Icon(Icons.logout_rounded, color: Colors.black54),
+            icon: Icon(Icons.logout_rounded, color: Theme.of(context).colorScheme.primary),
           ),
         )
       ],
@@ -61,8 +61,8 @@ class _TaskListPageState extends State<TaskListPage> {
               padding: const EdgeInsets.all(8),
               itemCount: tController.tasks.length,
               itemBuilder: (BuildContext context, int index) {
-                TaskModel taskIndex = tController.tasks[index];
-                return _buildTaskCard(context, tController , taskIndex);
+                TaskEntity taskIndex = tController.tasks[index];
+                return _buildTaskCard(context, tController, taskIndex);
               },
             ),
           ),
@@ -86,14 +86,17 @@ class _TaskListPageState extends State<TaskListPage> {
     return FloatingActionButton(
       onPressed: () async {
         await _taskController.clearSelectedTask();
-        await Navigator.of(context).pushNamed(TaskPage.route).then((value) => _taskController.getAllTasks());
+        await Navigator.of(context)
+            .pushNamed(TaskPage.route)
+            .then((value) => _taskController.getAllTasks());
       },
       backgroundColor: Theme.of(context).colorScheme.primary,
       child: const Icon(Icons.add, color: Colors.white, size: 28),
     );
   }
 
-  Widget _buildTaskCard(BuildContext context, TaskController tController, TaskModel task) {
+  Widget _buildTaskCard(
+      BuildContext context, TaskController tController, TaskEntity task) {
     return GestureDetector(
       onTap: () async {
         tController.setTaskSelected(task);
@@ -116,12 +119,48 @@ class _TaskListPageState extends State<TaskListPage> {
         ),
         child: Column(
           children: [
-            Container(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                task.title,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      task.isImportant
+                          ? Container(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.label_important_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      Text(
+                        task.title,
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.center,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(left: 4),
+                  height: MediaQuery.of(context).size.height * .04,
+                  width: MediaQuery.of(context).size.width * .2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    task.getDeadline(context),
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall!
+                        .copyWith(color: Colors.black),
+                  ),
+                ),
+              ],
             ),
             Container(
               padding: const EdgeInsets.all(4),

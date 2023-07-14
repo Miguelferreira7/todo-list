@@ -1,28 +1,29 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:isar/isar.dart';
 
 part 'task_model.g.dart';
 
-@HiveType(typeId: 1, adapterName: "TaskAdapter")
-class TaskModel {
+@collection
+class TaskEntity {
 
-  @HiveField(0)
-  String? id;
+  Id id = Isar.autoIncrement;
 
-  @HiveField(1)
   late bool isImportant = false;
 
-  @HiveField(2)
   String title;
 
-  @HiveField(3)
   String description;
 
-  @HiveField(4)
   String? deadline;
 
-  TaskModel({
+  String? image;
+
+  TaskEntity({
     required this.id,
+    required this.image,
     required this.isImportant,
     required this.title,
     required this.description,
@@ -35,5 +36,13 @@ class TaskModel {
     }
 
     return deadline!;
+  }
+
+  Uint8List? getImageFile() {
+    if (image == null || image!.isEmpty) {
+      return null;
+    }
+
+    return base64Decode(image!);
   }
 }

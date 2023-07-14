@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:todo_list/controller/task_controller.dart';
 
 class TaskPage extends GetView<TaskController> {
@@ -11,10 +13,13 @@ class TaskPage extends GetView<TaskController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: _buildAppBar(context),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [_buildBody(context), _buildSaveTaskButton(context)],
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [_buildBody(context), _buildSaveTaskButton(context)],
+        ),
       ),
     );
   }
@@ -43,7 +48,7 @@ class TaskPage extends GetView<TaskController> {
       child: Column(
         children: [
           Container(
-            margin: const EdgeInsets.only(bottom: 8, top: 16),
+            margin: const EdgeInsets.only(bottom: 8),
             height: MediaQuery.of(context).size.height * .06,
             width: MediaQuery.of(context).size.width * .9,
             child: Container(
@@ -71,7 +76,7 @@ class TaskPage extends GetView<TaskController> {
           ),
           Container(
             margin: const EdgeInsets.only(bottom: 4),
-            height: MediaQuery.of(context).size.height * .08,
+            height: MediaQuery.of(context).size.height * .07,
             width: MediaQuery.of(context).size.width * .8,
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
@@ -88,7 +93,14 @@ class TaskPage extends GetView<TaskController> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => _showDatePicker(context),
+                  onTap: () async {
+                    await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    ).then((value) => _taskController.setTaskDeadline(
+                        value?.format(context) ??
+                            _taskController.selectedTask.value.deadline));
+                  },
                   child: Container(
                     alignment: Alignment.center,
                     margin: const EdgeInsets.only(right: 8),
@@ -177,23 +189,108 @@ class TaskPage extends GetView<TaskController> {
                 ),
               ],
             ),
-          )
+          ),
+          SizedBox(
+            width: MediaQuery.of(context).size.width * .8,
+            child: Text(
+              "Imagem anexada:",
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: Colors.black),
+            ),
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * .2,
+            width: MediaQuery.of(context).size.width * .8,
+            child: _buildImageGallery(context),
+          ),
         ],
       ),
     );
   }
 
-  _showDatePicker(BuildContext context) async {
-    await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    ).then((value) => _taskController.setTaskDeadline(
-        value?.format(context) ?? _taskController.selectedTask.value.deadline));
+  Widget _buildImageGallery(BuildContext context) {
+    return Expanded(
+      child: Obx(
+        () => (controller.inProcess.value)
+            ? Container(
+                color: Colors.white,
+                height: double.infinity,
+                width: double.infinity,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 5.0,
+                    backgroundColor: Theme.of(context).primaryColor,
+                  ),
+                ),
+              )
+            : SizedBox(
+                height: MediaQuery.of(context).size.height * .2,
+                width: MediaQuery.of(context).size.width,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    controller.selectedTask.value.getImageFile() != null
+                        ? Container(
+                            width: 150,
+                            height: 250,
+                            decoration: BoxDecoration(
+                              color: const Color(0xffe6e6e6),
+                              borderRadius: BorderRadius.circular(6.0),
+                              image: DecorationImage(
+                                image: MemoryImage(
+                                  controller.selectedTask.value.getImageFile()!,
+                                ),
+                                fit: BoxFit.fitWidth,
+                              ),
+                            ),
+                            margin: const EdgeInsets.only(
+                                left: 16, bottom: 16, top: 8),
+                          )
+                        : Container(),
+                    GestureDetector(
+                      onTap: () {
+                        controller.getImageFromGallery(ImageSource.gallery);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 32),
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_enhance_rounded,
+                              size: 32,
+                              color: Colors.grey,
+                            ),
+                            Text(
+                              "Adicionar foto",
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(fontSize: 12),
+                            )
+                          ],
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+      ),
+    );
   }
 
   Widget _buildSaveTaskButton(BuildContext context) {
     return Container(
-      height: 40,
+      height: 50,
       width: MediaQuery.of(context).size.width * .8,
       margin: const EdgeInsets.only(top: 8, bottom: 16),
       child: ElevatedButton(
@@ -204,7 +301,7 @@ class TaskPage extends GetView<TaskController> {
         ),
         child: Text(
           "Salvar",
-          style: Theme.of(context).textTheme.button,
+          style: Theme.of(context).textTheme.button?.copyWith(fontSize: 16),
         ),
         onPressed: () => _taskController
             .saveTask()

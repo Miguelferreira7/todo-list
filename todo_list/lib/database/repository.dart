@@ -1,47 +1,56 @@
-import 'package:hive/hive.dart';
-import 'package:todo_list/model/task_model.dart';
+import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:todo_list/model/task/task_model.dart';
 
-class HiveDataBase {
+class TaskDataBase {
+  late Future<Isar?> db;
 
-  HiveDataBase() {
-    _initDatabase();
+  TaskDataBase() {
+    db = createDB();
   }
 
-  Future<void> _initDatabase() async {
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(TaskAdapter());
+  Future<Isar?> createDB() async {
+    if (Isar.instanceNames.isEmpty) {
+      final dir = await getApplicationDocumentsDirectory();
+
+      return await Isar.open(
+        [
+          TaskEntitySchema
+        ],
+        inspector: true, directory: dir.path,
+      );
     }
-    await Hive.openBox('tasks');
+    return Isar.getInstance();
   }
 
-  Future<List<TaskModel>> getTasks() async {
-    final box = await Hive.openBox('tasks');
+  Future<List<TaskEntity>> getTasks() async {
+    final isar = await db;
 
-    List<TaskModel> tasks = [];
-    for (var element in box.keys) {
-      tasks.add(await box.get(element));
+    try {
+      final tasks = await isar?.taskEntitys.where().findAll();
+
+    return tasks!;
+    } catch (e) {
+    return [];
     }
-    return tasks;
   }
 
-  Future<List<TaskModel>> createTask(TaskModel task) async {
-    final box = await Hive.openBox('tasks');
+  Future<List<TaskEntity>> saveTask(TaskEntity task) async {
+    final isar = await db;
 
-    await box.put(task.id, task);
+    await isar?.writeTxn(() async {
+      await isar.taskEntitys.put(task); // inserir & atualizar
+    });
+
     return await getTasks();
   }
 
-  Future<List<TaskModel>> updateTask(TaskModel task) async {
-    final box = await Hive.openBox('tasks');
+  Future<List<TaskEntity>> deleteTask(TaskEntity task) async {
+    final isar = await db;
 
-    await box.put(task.id, task);
-    return await getTasks();
-  }
-
-  Future<List<TaskModel>> deleteTask(TaskModel task) async {
-    final box = await Hive.openBox('tasks');
-
-    await box.delete(task.id);
+    await isar?.writeTxn(() async {
+      await isar.taskEntitys.delete(task.id);
+    });
     return await getTasks();
   }
 }

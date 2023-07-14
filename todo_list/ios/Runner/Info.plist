@@ -47,5 +47,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+    <string>Necessário para tirar fotos relacionados a task</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Necessário para buscar fotos relacionados a task</string>
 </dict>
 </plist>

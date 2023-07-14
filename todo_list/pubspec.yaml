@@ -12,17 +12,18 @@ dependencies:
 
   get:
   get_storage:
-  hive:
-  hive_flutter:
-  uuid:
+  isar:
+  isar_flutter_libs:
+  path_provider:
   http:
   shared_preferences:
+  image_picker:
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  hive_generator:
+  isar_generator:
   build_runner:
 
 

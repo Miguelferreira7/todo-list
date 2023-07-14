@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:todo_list/model/task_model.dart';
-import 'package:uuid/uuid.dart';
+import 'package:todo_list/model/task/task_model.dart';
 import '../database/repository.dart';
 
 class TaskController extends GetxController {
@@ -12,16 +16,21 @@ class TaskController extends GetxController {
     super.onInit();
   }
 
-  final HiveDataBase _hiveDataBase = HiveDataBase();
+  final TaskDataBase _hiveDataBase = TaskDataBase();
 
-  final tasks = <TaskModel>[].obs;
-  final selectedTask = TaskModel(
-    id: null,
-    title: "",
-    description: "",
-    isImportant: false,
-    deadline: null,
-  ).obs;
+  final tasks = <TaskEntity>[].obs;
+  final selectedTask = TaskEntity(
+          id: Isar.autoIncrement,
+          title: "",
+          description: "",
+          isImportant: false,
+          deadline: null,
+          image: null)
+      .obs;
+
+  File? selectedImage;
+  final picker = ImagePicker();
+  final inProcess = false.obs;
 
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -39,18 +48,8 @@ class TaskController extends GetxController {
     try {
       tasks.clear();
 
-      if (selectedTask.value.id == null) {
-        const uuid = Uuid();
-        selectedTask.value.id = uuid.v1();
-        List<TaskModel> updatedTaskList =
-            await _hiveDataBase.createTask(selectedTask.value);
-
-        tasks(updatedTaskList);
-        return;
-      }
-
-      List<TaskModel> updatedTaskList =
-          await _hiveDataBase.updateTask(selectedTask.value);
+      List<TaskEntity> updatedTaskList =
+          await _hiveDataBase.saveTask(selectedTask.value);
 
       tasks(updatedTaskList);
     } catch (e) {
@@ -61,7 +60,7 @@ class TaskController extends GetxController {
   Future<void> deleteTask() async {
     try {
       tasks.clear();
-      List<TaskModel> updatedTaskList =
+      List<TaskEntity> updatedTaskList =
           await _hiveDataBase.deleteTask(selectedTask.value);
 
       tasks(updatedTaskList);
@@ -70,13 +69,14 @@ class TaskController extends GetxController {
     }
   }
 
-  setTaskSelected(TaskModel task) {
+  setTaskSelected(TaskEntity task) {
     selectedTask.update((val) {
       val?.id = task.id;
       val?.title = task.title;
       val?.description = task.description;
       val?.deadline = task.deadline;
       val?.isImportant = task.isImportant;
+      val?.image = task.image;
     });
     titleController.text = task.title;
     descriptionController.text = task.description;
@@ -106,14 +106,36 @@ class TaskController extends GetxController {
     });
   }
 
+  getImageFromGallery(ImageSource src) async {
+    try {
+      inProcess(true);
+      final pickedFile = await picker.pickImage(source: src);
+      if (pickedFile != null) {
+        selectedImage = File(pickedFile.path);
+
+        selectedTask.update((val) {
+          val?.image = base64Encode(selectedImage!.readAsBytesSync());
+        });
+
+        inProcess(false);
+      } else {
+        inProcess(false);
+      }
+    } catch (e) {
+      inProcess(false);
+      return;
+    }
+  }
+
   clearSelectedTask() => selectedTask.update((val) {
         descriptionController.clear();
         titleController.clear();
-        val?.id = null;
+        val?.id = Isar.autoIncrement;
         val?.title = "";
         val?.description = "";
         val?.deadline = null;
         val?.isImportant = false;
+        val?.image = null;
       });
 
   doLogOff() async {

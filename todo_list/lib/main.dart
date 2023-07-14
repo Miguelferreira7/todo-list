@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/get_navigation.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/adapters.dart';
 import 'package:todo_list/injection/getx_binding.dart';
 import 'package:todo_list/utils/main_theme.dart';
 import 'package:todo_list/view/authentication/sign_in_page.dart';
 import 'package:todo_list/view/authentication/sign_up_page.dart';
 import 'package:todo_list/view/task/task_list_page.dart';
 import 'package:todo_list/view/task/task_page.dart';
-
 import 'view/authentication/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
   runApp(const MyApp());
 }
 
